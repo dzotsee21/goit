@@ -1,13 +1,14 @@
-package commands
+package api
 
 import (
+
+	"goit/src/utils"
 	"log"
 	"os"
 	"path/filepath"
-	"slices"
 )
 
-func Init() {
+func Init(isBare bool) {
 	var currentFiles []string
 
 	files, err := os.ReadDir(".")
@@ -19,22 +20,22 @@ func Init() {
 		currentFiles = append(currentFiles, file.Name())
 	}
 
-	containsGoit := slices.Contains(currentFiles, ".goit")
-
-	if !containsGoit {
-		goitStructure := map[string]interface{}{
-			"HEAD": "ref: refs/heads/master\n",
-			"config": "",
-			"objects": map[string]interface{}{},
-			"refs": map[string]interface{}{
-				"heads": map[string]interface{}{},
-			},
-		}
-
-		base := ".goit"
-
-		createStructure(base, goitStructure)
+	if utils.InRepo() {
+		return
 	}
+
+	goitStructure := map[string]interface{}{
+		"HEAD": "ref: refs/heads/master\n",
+		"config": utils.ObjectToStr(map[string]interface{}{"core": map[string]interface{}{"": map[string]interface{}{"bare": isBare == true}}}),
+		"objects": map[string]interface{}{},
+		"refs": map[string]interface{}{
+			"heads": map[string]interface{}{},
+		},
+	}
+
+	base := ".goit"
+
+	createStructure(base, goitStructure)
 }
 
 func createStructure(basePath string, structure map[string]interface{}) error {
