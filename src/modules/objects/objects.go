@@ -22,6 +22,25 @@ func CommitToc(hash string) map[string]interface{} {
 	return filesmodule.FlattenNestedTree(fileTree(treeHash(read(hash)), nil), nil, "")
 }
 
+func fileTree(treeHash string, tree map[string]interface{}) map[string]interface{} {
+	if tree != nil {
+		return fileTree(treeHash, map[string]interface{}{})
+	}
+
+	objectLines := utils.Lines(read(treeHash))
+
+	for _, line := range objectLines {
+		lineTokens := strings.Split(line, " ")
+		if lineTokens[0] == "tree" {
+			tree[lineTokens[2]] = fileTree(lineTokens[1], map[string]interface{}{})
+		} else {
+			tree[lineTokens[2]] = lineTokens[1]
+		}
+	}
+
+	return tree
+}
+
 func treeHash(str string) string {
 	if isType(str) == "commit" {
 		re := regexp.MustCompile(`\s+`)
@@ -42,25 +61,6 @@ func isType(str string) string {
 	} else {
 		return strType
 	}
-}
-
-func fileTree(treeHash string, tree map[string]interface{}) map[string]interface{} {
-	if tree != nil {
-		return fileTree(treeHash, map[string]interface{}{})
-	}
-
-	objectLines := utils.Lines(read(treeHash))
-
-	for _, line := range objectLines {
-		lineTokens := strings.Split(line, " ")
-		if lineTokens[0] == "tree" {
-			tree[lineTokens[2]] = fileTree(lineTokens[1], map[string]interface{}{})
-		} else {
-			tree[lineTokens[2]] = lineTokens[1]
-		}
-	}
-
-	return tree
 }
 
 func read(objectHash string) string {

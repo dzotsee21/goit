@@ -12,38 +12,6 @@ import (
 	"strings"
 )
 
-func hasFile(path string, stage int) bool {
-	idx := Read()
-
-	_, exists := idx[key(path, stage)]
-	return exists
-}
-
-func Read() map[string]interface{} {
-	indexFilePath := filesmodule.GoitPath("index")
-
-	var lines []string
-	if filesmodule.Exists(indexFilePath) {
-		lines = utils.Lines(filesmodule.Read(indexFilePath))
-	} else {
-		lines = utils.Lines("\n")
-	}
-
-	idx := make(map[string]interface{})
-	for _, blobStr := range lines {
-		blobData := strings.Split(blobStr, " ")
-		if len(blobData) < 3 {
-			continue
-		}
-
-		stageInt, _ := strconv.Atoi(blobData[1])
-		key := key(blobData[0], stageInt)
-		idx[key] = blobData[2]
-	}
-
-	return idx
-}
-
 func UpdateIndex(path string, cmds []string) string {
 	filesmodule.AssertInRepo()
 
@@ -82,6 +50,42 @@ func UpdateIndex(path string, cmds []string) string {
 	return "\n"
 }
 
+func hasFile(path string, stage int) bool {
+	idx := Read()
+
+	_, exists := idx[key(path, stage)]
+	return exists
+}
+
+func Read() map[string]interface{} {
+	indexFilePath := filesmodule.GoitPath("index")
+
+	var lines []string
+	if filesmodule.Exists(indexFilePath) {
+		lines = utils.Lines(filesmodule.Read(indexFilePath))
+	} else {
+		lines = utils.Lines("\n")
+	}
+
+	idx := make(map[string]interface{})
+	for _, blobStr := range lines {
+		blobData := strings.Split(blobStr, " ")
+		if len(blobData) < 3 {
+			continue
+		}
+
+		stageInt, _ := strconv.Atoi(blobData[1])
+		key := key(blobData[0], stageInt)
+		idx[key] = blobData[2]
+	}
+
+	return idx
+}
+
+func key(path string, stage int) string {
+	return path + "," + strconv.Itoa(stage)
+}
+
 func isFileInConflict(path string) bool {
 	return hasFile(path, 2)
 }
@@ -102,16 +106,6 @@ func WriteRm(path string) {
 	Write(idx)
 }
 
-func writeStageEntry(path, content string, stage int) {
-	idx := Read()
-	idx[key(path, stage)] = objects.Write(content)
-	Write(idx)
-}
-
-func key(path string, stage int) string {
-	return path + "," + strconv.Itoa(stage)
-}
-
 func Write(index map[string]interface{}) {
 	indexKeys := utils.MapKeys(index)
 
@@ -127,6 +121,11 @@ func Write(index map[string]interface{}) {
 	filesmodule.Write(filesmodule.GoitPath("index"), indexStr)
 }
 
+func writeStageEntry(path, content string, stage int) {
+	idx := Read()
+	idx[key(path, stage)] = objects.Write(content)
+	Write(idx)
+}
 
 func MatchingFiles(path string) []string {
 	searchPath := filesmodule.PathFromRepoRoot(path)
@@ -145,23 +144,6 @@ func MatchingFiles(path string) []string {
 	return paths
 }
 
-
-func WorkingCopyToc() map[string]interface{} {
-	indexKeys := utils.MapKeys(Read())
-
-	result := make(map[string]interface{})
-	for _, key := range indexKeys {
-		key = strings.Split(key, ",")[0]
-
-		if filesmodule.Exists(filesmodule.WorkingCopyPath(key)) {
-			hashed := utils.Hash(filesmodule.Read(filesmodule.WorkingCopyPath(key)))
-			result[key] = hashed 
-		}
-	}
-
-	return result
-}
-
 func toc() map[string]interface{} {
 	idx := Read()
 
@@ -174,6 +156,22 @@ func toc() map[string]interface{} {
 
 		path := parts[0]
 		result[path] = v
+	}
+
+	return result
+}
+
+func WorkingCopyToc() map[string]interface{} {
+	indexKeys := utils.MapKeys(Read())
+
+	result := make(map[string]interface{})
+	for _, key := range indexKeys {
+		key = strings.Split(key, ",")[0]
+
+		if filesmodule.Exists(filesmodule.WorkingCopyPath(key)) {
+			hashed := utils.Hash(filesmodule.Read(filesmodule.WorkingCopyPath(key)))
+			result[key] = hashed
+		}
 	}
 
 	return result

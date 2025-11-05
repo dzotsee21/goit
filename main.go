@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"goit/src/api"
 )
 
@@ -25,7 +24,7 @@ func main() {
 		if len(args) > 0 {
 			path = args[0]
 		}
-		fmt.Println(path)
+
 		api.Add(path, "")
 	}
 }
