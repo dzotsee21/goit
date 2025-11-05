@@ -7,24 +7,25 @@ import (
 )
 
 func main() {
-
 	initPtr := flag.Bool("init", false, "initialize Goit")
 	barePtr := flag.Bool("bare", false, "initialize bare Goit")
-	addPtr := flag.Bool("add", false, "add files in stage")
+	addPtr := flag.Bool("add", false, "add files to stage")
+	// rmPtr := flag.Bool("rm", false, "remove files")
 
 	flag.Parse()
 
-	if (*initPtr) {
+	args := flag.Args()
+
+	if *initPtr {
 		api.Init(*barePtr)
 	}
 
-	if (*addPtr) {
-		api.Add(".", "")
+	if *addPtr {
+		var path string
+		if len(args) > 0 {
+			path = args[0]
+		}
+		fmt.Println(path)
+		api.Add(path, "")
 	}
-
-	args := flag.Args()
-	if len(args) > 0 {
-		fmt.Printf("args: %v\n", args)
-	}
-
 }
