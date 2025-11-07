@@ -134,7 +134,7 @@ func Commit(cmds map[string]string) string {
 	} else {
 		headDesc = refs.HeadBranchName()
 	}
-	if refs.Hash("HEAD") != nil && treeHash == objects.TreeHash(objects.Read(refs.Hash("HEAD").(string))) {
+	if refs.Hash("HEAD").(string) != "" && treeHash == objects.TreeHash(objects.Read(refs.Hash("HEAD").(string))) {
 		fmt.Println("# on" + headDesc + "\nnothing to commit, working dir clean" )
 	} else {
 
