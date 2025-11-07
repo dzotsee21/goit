@@ -4,6 +4,7 @@ import (
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/objects"
 	"goit/src/modules/utils"
+	"path/filepath"
 	"regexp"
 )
 
@@ -13,7 +14,7 @@ func Hash(refOrHash string) interface{} {
 	} else {
 		terminalRef := TerminalRef(refOrHash)
 		if terminalRef == "FETCH_HEAD" {
-			return fetchHeadBranchToMerge(headBranchName())
+			return fetchHeadBranchToMerge(HeadBranchName())
 		}
 		if exists(terminalRef) {
 			return filesmodule.Read(filesmodule.GoitPath(terminalRef))
@@ -24,7 +25,7 @@ func Hash(refOrHash string) interface{} {
 }
 
 func TerminalRef(ref string) string {
-	if ref == "HEAD" && !isHeadDetached() {
+	if ref == "HEAD" && !IsHeadDetached() {
 		headPath := filesmodule.GoitPath("HEAD")
 		content := filesmodule.Read(headPath)
 
@@ -37,28 +38,41 @@ func TerminalRef(ref string) string {
 
 		return ""
 	}
-	if isRef(ref) {
+	if IsRef(ref) {
 		return ref
 	} else {
 		return toLocalRef(ref)
 	}
 }
 
-func isHeadDetached() bool {
+func IsHeadDetached() bool {
 	headPath := filesmodule.GoitPath("HEAD")
 	content := filesmodule.Read(headPath)
 
-	re := regexp.MustCompile(`ref: (refs/heads/.+)`)
-	matches := re.FindStringSubmatch(content)
+	re := regexp.MustCompile(`refs`)
+	matches := re.FindString(content)
 
-	if len(matches) > 0 {
+	if matches != "" {
 		return true
-	} else {
-		return false
 	}
+	return false
 }
 
-func isRef(ref string) bool {
+func HeadBranchName() string {
+	if !IsHeadDetached() {
+		content := filesmodule.Read(filesmodule.GoitPath("HEAD"))
+		re1 := regexp.MustCompile(`refs/heads/(.+)`)
+		matches := re1.FindStringSubmatch(content)
+		if len(matches) > 1 {
+			return matches[1]
+		}
+	}
+
+	return ""
+}
+
+
+func IsRef(ref string) bool {
 	re1 := regexp.MustCompile(`^refs/heads/[A-Za-z-]+$`)
 	matches1 := re1.FindStringSubmatch(ref)
 	re2 := regexp.MustCompile(`^refs/remotes/[A-Za-z-]+/[A-Za-z-]+$`)
@@ -101,19 +115,29 @@ func fetchHeadBranchToMerge(branchName string) []string {
 	return result
 }
 
-func headBranchName() string {
-	if !isHeadDetached() {
-		content := filesmodule.Read(filesmodule.GoitPath("HEAD"))
-		re1 := regexp.MustCompile(`refs/heads/(.+)`)
-		matches := re1.FindStringSubmatch(content)
-		if len(matches) > 1 {
-			return matches[1]
-		}
-	}
-
-	return ""
+func exists(ref string) bool {
+	return IsRef(ref) && filesmodule.Exists(filesmodule.GoitPath(ref))
 }
 
-func exists(ref string) bool {
-	return isRef(ref) && filesmodule.Exists(filesmodule.GoitPath(ref))
+func CommitParentHashes() []string {
+	headHash := Hash("HEAD")
+
+	if IsMergeInProgress() != "" {
+		return []string{headHash.(string), Hash("MERGE_HEAD").(string)}
+	}
+	if headHash == "" {
+		return []string{}
+	} else {
+		return []string{headHash.(string)}
+	}
+}
+
+func IsMergeInProgress() string {
+	return Hash("MERGE_HEAD").(string)
+}
+
+func Write(ref, content string) {
+	if IsRef(ref) {
+		filesmodule.Write(filesmodule.GoitPath(filepath.Clean(ref)), content)
+	}
 }

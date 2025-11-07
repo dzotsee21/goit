@@ -129,7 +129,7 @@ func writeStageEntry(path, content string, stage int) {
 
 func MatchingFiles(path string) []string {
 	searchPath := filesmodule.PathFromRepoRoot(path)
-	searchPathKeys := utils.MapKeys(toc())
+	searchPathKeys := utils.MapKeys(Toc())
 
 	escaped := regexp.QuoteMeta(searchPath)
 	re := regexp.MustCompile("^" + escaped)
@@ -144,7 +144,7 @@ func MatchingFiles(path string) []string {
 	return paths
 }
 
-func toc() map[string]interface{} {
+func Toc() map[string]interface{} {
 	idx := Read()
 
 	result := make(map[string]interface{})
@@ -175,4 +175,25 @@ func WorkingCopyToc() map[string]interface{} {
 	}
 
 	return result
+}
+
+func ConflictedPaths() []string {
+	idx := Read()
+	idxKeys := utils.MapKeys(idx)
+
+	var paths []string
+	for _, key := range idxKeys {
+		if keyPieces(key)["stage"] == 2 {
+			paths = append(paths, keyPieces(key)["path"].(string))
+		}
+	}
+
+	return paths
+}
+
+func keyPieces(key string) map[string]interface{} {
+	pieces := strings.Split(key, ",")
+
+	stageInt, _ := strconv.Atoi(pieces[1])
+	return map[string]interface{}{"path": pieces[0], "stage": stageInt }
 }

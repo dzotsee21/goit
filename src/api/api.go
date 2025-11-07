@@ -6,6 +6,8 @@ import (
 	"goit/src/modules/diff"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/index"
+	"goit/src/modules/objects"
+	"goit/src/modules/refs"
 	"goit/src/modules/utils"
 	"log"
 	"os"
@@ -118,5 +120,75 @@ func Rm(path string, cmds []string) {
 				index.UpdateIndex(file, []string{"remove"})
 			}
 		}
+	}
+}
+
+func Commit(cmds map[string]string) string {
+	filesmodule.AssertInRepo()
+
+	treeHash := writeTree()
+
+	var headDesc string
+	if refs.IsHeadDetached() {
+		headDesc = "detached HEAD"
+	} else {
+		headDesc = refs.HeadBranchName()
+	}
+	if refs.Hash("HEAD") != nil && treeHash == objects.TreeHash(objects.Read(refs.Hash("HEAD").(string))) {
+		fmt.Println("# on" + headDesc + "\nnothing to commit, working dir clean" )
+	} else {
+
+		conflictedPaths := index.ConflictedPaths()
+		if refs.IsMergeInProgress() != "" && len(conflictedPaths) > 0 {
+			fmt.Printf("%#v\n", conflictedPaths)
+		} else {
+			var m string
+			if refs.IsMergeInProgress() != "" {
+				m = filesmodule.Read(filesmodule.GoitPath("MERGE_MSG"))
+			} else {
+				m = cmds["m"]
+			}
+
+			commitHash := objects.WriteCommit(treeHash, m, refs.CommitParentHashes())
+
+			updateRef("HEAD", commitHash)
+
+			if refs.IsMergeInProgress() != "" {
+				err := os.Remove(filesmodule.GoitPath("MERGE_MSG"))
+				if err != nil {
+					fmt.Println("Couldn't find the MERGE_MSG")
+				}
+				return "merge made by the three-wy strategy"
+			} else {
+				return "[" + headDesc + " " + commitHash + "] " + m
+			}
+		}
+	}
+
+	return ""
+}
+
+func writeTree() string {
+	filesmodule.AssertInRepo()
+
+	return objects.WriteTree(filesmodule.NestFlatTree(index.Toc()))
+}
+
+func updateRef(refToUpdate, refToUpdateTo string) {
+	filesmodule.AssertInRepo()
+
+	hash := refs.Hash(refToUpdateTo).(string)
+
+	if !objects.Exists(hash) {
+		fmt.Println(refToUpdateTo + " not a valid SHA1")
+	}
+	if !refs.IsRef(refToUpdate) {
+		fmt.Println("cannot lock the ref " + refToUpdate)
+	}
+	if objects.IsType(objects.Read(hash)) != "commit" {
+		branch := refs.TerminalRef(refToUpdate)
+		fmt.Println(branch + " cannot refer to non-commit object " + hash + "\n")
+	} else {
+		refs.Write(refs.TerminalRef(refToUpdate), hash)
 	}
 }

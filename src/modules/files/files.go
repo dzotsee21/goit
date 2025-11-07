@@ -173,3 +173,14 @@ func FlattenNestedTree(tree, obj map[string]interface{}, basePath string) map[st
 
 	return obj
 }
+
+func NestFlatTree(obj map[string]interface{}) map[string]interface{} {
+	objKeys := utils.MapKeys(obj)
+
+	nestedObj := make(map[string]interface{})
+	for _, key := range objKeys {
+		nestedObj[key] = utils.SetIn(nestedObj, obj[key].([]interface{}))
+	}
+
+	return nestedObj
+}
