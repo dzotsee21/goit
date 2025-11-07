@@ -4,6 +4,8 @@ import (
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/objects"
 	"goit/src/modules/utils"
+	"log"
+	"os"
 	"path/filepath"
 	"regexp"
 )
@@ -16,7 +18,7 @@ func Hash(refOrHash string) interface{} {
 		if terminalRef == "FETCH_HEAD" {
 			return fetchHeadBranchToMerge(HeadBranchName())
 		}
-		if exists(terminalRef) {
+		if Exists(terminalRef) {
 			return filesmodule.Read(filesmodule.GoitPath(terminalRef))
 		}
 	}
@@ -41,7 +43,7 @@ func TerminalRef(ref string) string {
 	if IsRef(ref) {
 		return ref
 	} else {
-		return toLocalRef(ref)
+		return ToLocalRef(ref)
 	}
 }
 
@@ -88,7 +90,7 @@ func IsRef(ref string) bool {
 	return len(matches1) > 0 || len(matches2) > 0
 }
 
-func toLocalRef(name string) string {
+func ToLocalRef(name string) string {
 	return "refs/heads/" + name
 }
 
@@ -115,7 +117,7 @@ func fetchHeadBranchToMerge(branchName string) []string {
 	return result
 }
 
-func exists(ref string) bool {
+func Exists(ref string) bool {
 	return IsRef(ref) && filesmodule.Exists(filesmodule.GoitPath(ref))
 }
 
@@ -140,4 +142,18 @@ func Write(ref, content string) {
 	if IsRef(ref) {
 		filesmodule.Write(filesmodule.GoitPath(filepath.Clean(ref)), content)
 	}
+}
+
+func LocalHeads() map[string]interface{} {
+	entries, err := os.ReadDir(filepath.Join(filesmodule.GoitPath(""), "refs", "heads"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	heads := make(map[string]interface{})
+	for _, entry := range entries {
+		heads[entry.Name()] = Hash(entry.Name())
+	}
+
+	return heads
 }

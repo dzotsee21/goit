@@ -192,3 +192,32 @@ func updateRef(refToUpdate, refToUpdateTo string) {
 		refs.Write(refs.TerminalRef(refToUpdate), hash)
 	}
 }
+
+func Branch(name interface{}, opts []string) string {
+	filesmodule.AssertInRepo()
+
+	if name == nil {
+		branchHeads := utils.MapKeys(refs.LocalHeads())
+		localBranches := ""
+		for _, branch := range branchHeads {
+			if branch == refs.HeadBranchName() {
+				localBranches += "* " + branch
+			} else {
+				localBranches += "  " + branch
+			}
+		}
+
+		return localBranches
+	}
+
+	if refs.Hash("HEAD") == "" {
+		fmt.Println(refs.HeadBranchName() + " not a valid object name")
+	}
+	if refs.Exists(refs.ToLocalRef(name.(string))) {
+		fmt.Println("A branch named " + name.(string) + " already exists")
+	} else {
+		updateRef(refs.ToLocalRef(name.(string)), refs.Hash("HEAD").(string))
+	}
+
+	return ""
+}
