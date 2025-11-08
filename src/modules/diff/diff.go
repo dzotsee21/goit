@@ -37,10 +37,10 @@ func nameStatus(dif map[string]interface{}) map[string]interface{} {
 	statuses := make(map[string]interface{})
 
 	for _, key := range difKeys {
-		difKey := dif[key].(map[string]interface{})
+		info := dif[key].(map[string]interface{})
 
-		if difKey["status"] != FILE_STATUS["SAME"] {
-			statuses[key] = difKey["status"].(string)
+		if info["status"] != FILE_STATUS["SAME"] {
+			statuses[key] = info["status"].(string)
 		}
 	}
 
@@ -139,4 +139,26 @@ func mapsEqual(a, b map[string]interface{}) bool {
 	}
 
 	return true
+}
+
+func ChangedFilesCommitWouldOverwrite(hash string) []string {
+	headHash := refs.Hash("HEAD")
+	return utils.Intersection(utils.MapKeys(nameStatus(Diff(headHash, nil))), utils.MapKeys(nameStatus(Diff(headHash, hash))))
+}
+
+func Diff(hash1, hash2 interface{}) map[string]interface{} {
+	var a map[string]interface{}
+	if hash1 == nil {
+		a = index.Toc()
+	} else {
+		a = objects.CommitToc(hash1.(string))
+	}
+	var b map[string]interface{}
+	if hash2 == nil {
+		b = index.WorkingCopyToc()
+	} else {
+		b = objects.CommitToc(hash2.(string))
+	}
+
+	return tocDiff(a, b, nil)
 }

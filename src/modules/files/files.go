@@ -3,6 +3,7 @@ package filesmodule
 import (
 	"fmt"
 	"goit/src/modules/utils"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -183,4 +184,21 @@ func NestFlatTree(obj map[string]interface{}) map[string]interface{} {
 	}
 
 	return nestedObj
+}
+
+func RmEmptyDirs(path string) {
+	info, _ := os.Stat(path)
+
+	if info.IsDir() {
+		entries, _ := os.ReadDir(path)
+		for _, entry := range entries {
+			RmEmptyDirs(filepath.Join(path, entry.Name()))
+		}
+		if len(entries) == 0 {
+			err := os.Remove(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
 }

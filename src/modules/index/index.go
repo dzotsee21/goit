@@ -197,3 +197,14 @@ func keyPieces(key string) map[string]interface{} {
 	stageInt, _ := strconv.Atoi(pieces[1])
 	return map[string]interface{}{"path": pieces[0], "stage": stageInt }
 }
+
+func TocToIndex(toc map[string]interface{}) map[string]interface{} {
+	tocKeys := utils.MapKeys(toc)
+	
+	stagedToc := make(map[string]interface{})
+	for _, tKey := range tocKeys {
+		stagedToc[key(tKey, 0)] = toc[tKey]
+	}
+
+	return stagedToc
+}

@@ -9,6 +9,7 @@ import (
 	"goit/src/modules/objects"
 	"goit/src/modules/refs"
 	"goit/src/modules/utils"
+	workingcopy "goit/src/modules/working_copy"
 	"log"
 	"os"
 	"path/filepath"
@@ -217,6 +218,50 @@ func Branch(name interface{}, opts []string) string {
 		fmt.Println("A branch named " + name.(string) + " already exists")
 	} else {
 		updateRef(refs.ToLocalRef(name.(string)), refs.Hash("HEAD").(string))
+	}
+
+	return ""
+}
+
+func Checkout(ref string) string {
+	toHash := refs.Hash(ref).(string)
+
+	if !objects.Exists(toHash) {
+		fmt.Println(ref + " did not match any file(s) known to Goit")
+	}
+	if objects.IsType(objects.Read(toHash)) != "commit" {
+		fmt.Println("reference is not a tree: " + ref)
+	}
+	if ref == refs.HeadBranchName() || ref == filesmodule.Read(filesmodule.GoitPath("HEAD")) {
+		return "already on " + ref
+	} else {
+		paths := diff.ChangedFilesCommitWouldOverwrite(toHash)
+		if len(paths) > 0 {
+			fmt.Println("local changes would be lost\n" + strings.Join(paths, "\n") + "\n")
+		} else {
+			err := os.Chdir(filesmodule.WorkingCopyPath(""))
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			isDetachingHead := objects.Exists(ref)
+
+			workingcopy.Write(diff.Diff(refs.Hash("HEAD"), toHash))
+
+			if isDetachingHead {
+				refs.Write("HEAD", toHash)
+			} else {
+				refs.Write("HEAD", "ref: " + refs.ToLocalRef(ref))
+			}
+
+			index.Write(index.TocToIndex(objects.CommitToc(toHash)))
+
+			if isDetachingHead {
+				return "note: checking out " + toHash + "\nYou are in detached HEAD state."
+			} else {
+				return "switched to branch " + ref
+			}
+		}
 	}
 
 	return ""
