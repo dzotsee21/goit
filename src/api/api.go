@@ -266,3 +266,27 @@ func Checkout(ref string) string {
 
 	return ""
 }
+
+func Diff(ref1, ref2 interface{}, cmds []string) string {
+	filesmodule.AssertInRepo()
+
+	if ref1 != nil && refs.Hash(ref1.(string)) == "" {
+		fmt.Println("ambiguous argument " + ref1.(string) + ": unknown revision")
+	}
+	if ref2 != nil && refs.Hash(ref2.(string)) == "" {
+		fmt.Println("ambiguous argument " + ref2.(string) + ": unknown revision")
+	} else {
+		nameToStatus := diff.NameStatus(diff.Diff(refs.Hash(ref1.(string)), refs.Hash(ref2.(string))))
+
+		statusKeys := utils.MapKeys(nameToStatus)
+
+		changedFiles := ""
+		for _, key := range statusKeys {
+			changedFiles += nameToStatus[key].(string) + " " + key
+		}
+
+		return changedFiles
+	}
+
+	return ""
+}

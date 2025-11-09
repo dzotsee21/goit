@@ -18,7 +18,7 @@ func AddedOrModifiedFiles() []string {
 	} else {
 		headToc = make(map[string]interface{})
 	}
-	wc := nameStatus(tocDiff(headToc, index.WorkingCopyToc(), nil))
+	wc := NameStatus(tocDiff(headToc, index.WorkingCopyToc(), nil))
 
 	wcKeys := utils.MapKeys(wc)
 
@@ -32,7 +32,7 @@ func AddedOrModifiedFiles() []string {
 	return files
 }
 
-func nameStatus(dif map[string]interface{}) map[string]interface{} {
+func NameStatus(dif map[string]interface{}) map[string]interface{} {
 	difKeys := utils.MapKeys(dif)
 	statuses := make(map[string]interface{})
 
@@ -143,7 +143,7 @@ func mapsEqual(a, b map[string]interface{}) bool {
 
 func ChangedFilesCommitWouldOverwrite(hash string) []string {
 	headHash := refs.Hash("HEAD")
-	return utils.Intersection(utils.MapKeys(nameStatus(Diff(headHash, nil))), utils.MapKeys(nameStatus(Diff(headHash, hash))))
+	return utils.Intersection(utils.MapKeys(NameStatus(Diff(headHash, nil))), utils.MapKeys(NameStatus(Diff(headHash, hash))))
 }
 
 func Diff(hash1, hash2 interface{}) map[string]interface{} {
