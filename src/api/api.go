@@ -290,3 +290,21 @@ func Diff(ref1, ref2 interface{}, cmds []string) string {
 
 	return ""
 }
+
+func Remote(command, name, path string) string {
+	filesmodule.AssertInRepo()
+
+	if command != "add" {
+		fmt.Println("unsupported")
+	}
+
+	_, exists := config.Read()["remote"].(map[string]interface{})[name]
+	if exists {
+		fmt.Println("remote " + name + " already exists")
+	} else {
+		config.Write(utils.SetIn(config.Read(), []interface{}{"remote", name, "url", path}))
+		return "\n"
+	}
+	
+	return ""
+}

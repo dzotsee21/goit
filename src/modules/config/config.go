@@ -2,6 +2,9 @@ package config
 
 import (
 	"fmt"
+	"strings"
+	filesmodule "goit/src/modules/files"
+	"regexp"
 	"strconv"
 )
 
@@ -54,4 +57,35 @@ func objectToKeys(configObj map[string]interface{}) []string {
 	}
 
 	return objKeys
+}
+
+func Read() map[string]interface{} {
+	return StrToObj(filesmodule.Read(filesmodule.GoitPath("config")))
+}
+
+func Write(configObj map[string]interface{}) {
+	filesmodule.Write(filesmodule.GoitPath("config"), ObjectToStr(configObj))
+}
+
+func StrToObj(str string) map[string]interface{} {
+	strSplit := strings.Split(str, "\n")
+	entryName := ""
+	configObj := make(map[string]interface{})
+
+	for _, sptStr := range strSplit {
+		re := regexp.MustCompile(`\[(.*?)\]`)
+
+		if re.Match([]byte(sptStr)) {
+			entryName = sptStr
+			configObj[entryName] = make(map[string]interface{})
+		} else {
+			vals := strings.Split(sptStr, "=")
+			param := strings.TrimSpace(vals[0])
+			val := strings.TrimSpace(vals[1])
+			configObj[entryName].(map[string]interface{})[param] = val
+		}
+
+	}
+
+	return configObj
 }
