@@ -40,7 +40,7 @@ func UpdateIndex(path string, cmds []string) string {
 		return ""
 	}
 	if isOnDisk && (slices.Contains(cmds, "add") || isInIndex) {
-		writeNonConflict(path, filesmodule.Read(filesmodule.WorkingCopyPath(path)))
+		WriteNonConflict(path, filesmodule.Read(filesmodule.WorkingCopyPath(path)))
 		return "\n"
 	}
 	if !slices.Contains(cmds, "remove") && !isOnDisk {
@@ -90,7 +90,7 @@ func isFileInConflict(path string) bool {
 	return hasFile(path, 2)
 }
 
-func writeNonConflict(path, content string) {
+func WriteNonConflict(path, content string) {
 	WriteRm(path)
 
 	writeStageEntry(path, content, 0)
@@ -195,16 +195,28 @@ func keyPieces(key string) map[string]interface{} {
 	pieces := strings.Split(key, ",")
 
 	stageInt, _ := strconv.Atoi(pieces[1])
-	return map[string]interface{}{"path": pieces[0], "stage": stageInt }
+	return map[string]interface{}{"path": pieces[0], "stage": stageInt}
 }
 
 func TocToIndex(toc map[string]interface{}) map[string]interface{} {
 	tocKeys := utils.MapKeys(toc)
-	
+
 	stagedToc := make(map[string]interface{})
 	for _, tKey := range tocKeys {
 		stagedToc[key(tKey, 0)] = toc[tKey]
 	}
 
 	return stagedToc
+}
+
+func WriteConflict(path, receiverContent, giverContent, baseContent interface{}) {
+	if baseContent != nil {
+
+		writeStageEntry(path.(string), baseContent.(string), 1)
+	}
+
+	writeStageEntry(path.(string), receiverContent.(string), 2)
+
+	writeStageEntry(path.(string), giverContent.(string), 3)
+
 }

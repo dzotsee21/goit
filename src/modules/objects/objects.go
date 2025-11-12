@@ -47,7 +47,7 @@ func fileTree(TreeHash string, tree map[string]interface{}) map[string]interface
 
 func WriteTree(tree map[string]interface{}) string {
 	treeKeys := utils.MapKeys(tree)
-	
+
 	treeObject := ""
 	for _, key := range treeKeys {
 		switch kType := tree[key].(type) {
@@ -112,14 +112,14 @@ func AllObjects() []string {
 	var contents []string
 	for _, file := range files {
 		content := Read(filepath.Join(filesmodule.GoitPath("objects"), file.Name()))
-	 	contents = append(contents, content)
+		contents = append(contents, content)
 	}
 
 	return contents
 }
 
 func IsAncestor(descendentHash, ancestorHash string) bool {
-	_ancestors := ancestors(descendentHash)
+	_ancestors := Ancestors(descendentHash)
 
 	for _, anc := range _ancestors {
 		if anc == ancestorHash {
@@ -130,12 +130,12 @@ func IsAncestor(descendentHash, ancestorHash string) bool {
 	return false
 }
 
-func ancestors(commitHash string) []interface{} {
+func Ancestors(commitHash string) []interface{} {
 	parents := parentHashes(Read(commitHash))
 
 	combined := append([]interface{}{}, parents...)
 	for _, p := range parents {
-		combined = append(combined, ancestors(p.(string)))
+		combined = append(combined, Ancestors(p.(string)))
 	}
 
 	return utils.Flatten(combined)
@@ -156,4 +156,8 @@ func parentHashes(str string) []interface{} {
 	}
 
 	return []interface{}{}
+}
+
+func IsUpToDate(receiverHash, giverHash string) bool {
+	return receiverHash != "" && (receiverHash == giverHash || IsAncestor(receiverHash, giverHash))
 }

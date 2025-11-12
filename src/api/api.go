@@ -138,7 +138,7 @@ func Commit(cmds map[string]string) string {
 		headDesc = refs.HeadBranchName()
 	}
 	if refs.Hash("HEAD").(string) != "" && treeHash == objects.TreeHash(objects.Read(refs.Hash("HEAD").(string))) {
-		fmt.Println("# on" + headDesc + "\nnothing to commit, working dir clean" )
+		fmt.Println("# on" + headDesc + "\nnothing to commit, working dir clean")
 	} else {
 
 		conflictedPaths := index.ConflictedPaths()
@@ -161,7 +161,7 @@ func Commit(cmds map[string]string) string {
 				if err != nil {
 					fmt.Println("Couldn't find the MERGE_MSG")
 				}
-				return "merge made by the three-wy strategy"
+				return "merge made by the three-way strategy"
 			} else {
 				return "[" + headDesc + " " + commitHash + "] " + m
 			}
@@ -253,7 +253,7 @@ func Checkout(ref string) string {
 			if isDetachingHead {
 				refs.Write("HEAD", toHash)
 			} else {
-				refs.Write("HEAD", "ref: " + refs.ToLocalRef(ref))
+				refs.Write("HEAD", "ref: "+refs.ToLocalRef(ref))
 			}
 
 			index.Write(index.TocToIndex(objects.CommitToc(toHash)))
@@ -330,8 +330,8 @@ func Fetch(remote, branch interface{}) []string {
 
 		oldHash := refs.Hash(remoteRef).(string)
 
-		remoteObjects := utils.OnRemote(remoteUrl.(string))(func(_ interface{}) interface{} { 
-				return objects.AllObjects()
+		remoteObjects := utils.OnRemote(remoteUrl.(string))(func(_ interface{}) interface{} {
+			return objects.AllObjects()
 		}).([]string)
 
 		for _, obj := range remoteObjects {
@@ -340,7 +340,7 @@ func Fetch(remote, branch interface{}) []string {
 
 		updateRef(remoteRef, newHash.(string))
 
-		refs.Write("FETCH_HEAD", newHash.(string) + " branch " + branch.(string) + " of " + remoteUrl.(string))
+		refs.Write("FETCH_HEAD", newHash.(string)+" branch "+branch.(string)+" of "+remoteUrl.(string))
 
 		var addit string
 		if merge.IsAForceFetch(oldHash, newHash.(string)) {
@@ -350,10 +350,46 @@ func Fetch(remote, branch interface{}) []string {
 		}
 
 		return []string{"From " + remoteUrl.(string),
-						"Count " + strconv.Itoa(len(remoteObjects)),
-						branch.(string) + " -> " + remote.(string) + "/" + branch.(string) + addit + "\n",
+			"Count " + strconv.Itoa(len(remoteObjects)),
+			branch.(string) + " -> " + remote.(string) + "/" + branch.(string) + addit + "\n",
 		}
 	}
 
 	return []string{}
+}
+
+func Merge(ref string) string {
+	filesmodule.AssertInRepo()
+
+	receiverHash := refs.Hash("HEAD").(string)
+
+	giverHash := refs.Hash(ref).(string)
+
+	if refs.IsHeadDetached() {
+		log.Fatal("unsupported")
+	}
+	if giverHash == "" || objects.IsType(objects.Read(giverHash)) != "commit" {
+		log.Fatal(ref + ": expected commit type")
+	}
+	if objects.IsUpToDate(receiverHash, giverHash) {
+		return "Already up-to-date"
+	} else {
+		paths := diff.ChangedFilesCommitWouldOverwrite(giverHash)
+		if len(paths) > 0 {
+			log.Fatal("local changes would be lost\n" + strings.Join(paths, "\n"))
+		}
+		if merge.CanFastForward(receiverHash, giverHash) {
+			merge.WriteFastForwardMerge(receiverHash, giverHash)
+
+			return "fast-forward"
+		} else {
+			merge.WriteNonFastForwardMerge(receiverHash, giverHash, ref)
+
+			if merge.HasConflicts(receiverHash, giverHash) {
+				return "auto merge failed. fix conflicts and commit the result."
+			} else {
+				return Commit(map[string]string{})
+			}
+		}
+	}
 }

@@ -2,11 +2,15 @@ package config
 
 import (
 	"fmt"
-	"strings"
 	filesmodule "goit/src/modules/files"
 	"regexp"
 	"strconv"
+	"strings"
 )
+
+func IsBare() bool {
+	return Read()["core"].(map[string]map[string]string)[""]["bare"] == "true"
+}
 
 func ObjectToStr(configObj map[string]interface{}) string {
 	objKeys := objectToKeys(configObj)

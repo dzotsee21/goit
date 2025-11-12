@@ -18,7 +18,7 @@ func AddedOrModifiedFiles() []string {
 	} else {
 		headToc = make(map[string]interface{})
 	}
-	wc := NameStatus(tocDiff(headToc, index.WorkingCopyToc(), nil))
+	wc := NameStatus(TocDiff(headToc, index.WorkingCopyToc(), nil))
 
 	wcKeys := utils.MapKeys(wc)
 
@@ -47,7 +47,7 @@ func NameStatus(dif map[string]interface{}) map[string]interface{} {
 	return statuses
 }
 
-func tocDiff(receiver, giver, base map[string]interface{}) map[string]interface{} {
+func TocDiff(receiver, giver, base map[string]interface{}) map[string]interface{} {
 	fileStatus := func(receiver, giver, base map[string]interface{}) string {
 		var receiverPresent bool
 		var giverPresent bool
@@ -83,11 +83,11 @@ func tocDiff(receiver, giver, base map[string]interface{}) map[string]interface{
 			return FILE_STATUS["SAME"]
 		}
 		if (!receiverPresent && !basePresent && giverPresent) ||
-		   (receiverPresent && !basePresent && !giverPresent) {
+			(receiverPresent && !basePresent && !giverPresent) {
 			return FILE_STATUS["ADD"]
 		}
 		if (receiverPresent && basePresent && !giverPresent) ||
-		   (!receiverPresent && basePresent && giverPresent) {
+			(!receiverPresent && basePresent && giverPresent) {
 			return FILE_STATUS["DELETE"]
 		}
 
@@ -112,10 +112,10 @@ func tocDiff(receiver, giver, base map[string]interface{}) map[string]interface{
 		status := fileStatus(receiver[uPath].(map[string]interface{}), giver[uPath].(map[string]interface{}), base[uPath].(map[string]interface{}))
 
 		idx = utils.SetIn(idx, []interface{}{map[string]interface{}{
-			"status": status,
+			"status":   status,
 			"receiver": receiver[uPath],
-			"base": base[uPath],
-			"giver": giver[uPath],
+			"base":     base[uPath],
+			"giver":    giver[uPath],
 		}})
 	}
 
@@ -160,5 +160,5 @@ func Diff(hash1, hash2 interface{}) map[string]interface{} {
 		b = objects.CommitToc(hash2.(string))
 	}
 
-	return tocDiff(a, b, nil)
+	return TocDiff(a, b, nil)
 }
