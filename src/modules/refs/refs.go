@@ -1,6 +1,7 @@
 package refs
 
 import (
+	"goit/src/modules/config"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/objects"
 	"goit/src/modules/utils"
@@ -160,4 +161,8 @@ func LocalHeads() map[string]interface{} {
 
 func ToRemoteRef(remote, name string) string {
 	return "refs/remotes/" + remote + "/" + name
+}
+
+func IsCheckedOut(branch string) bool {
+	return !config.IsBare() && HeadBranchName() == branch
 }

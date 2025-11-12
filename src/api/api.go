@@ -393,3 +393,59 @@ func Merge(ref string) string {
 		}
 	}
 }
+
+func Pull(remote, branch string) string {
+	filesmodule.AssertInRepo()
+
+	Fetch(remote, branch)
+
+	return Merge("FETCH_HEAD")
+}
+
+func Push(remote, branch interface{}, cmds map[string]string) string {
+	filesmodule.AssertInRepo()
+
+	if remote == nil || branch == nil {
+		log.Fatal("unsupported")
+	} else {
+		remotePath := config.Read()["remote"].(map[string]map[string]string)[remote.(string)]["url"]
+		remoteCall := utils.OnRemote(remotePath)
+
+		if remoteCall(func(interface{}) interface{} {
+			return refs.IsCheckedOut
+		}, branch.(string)).(bool) {
+			log.Fatal("refusing to update checked out branch " + branch.(string))
+		} else {
+			receiverHash := remoteCall(func(interface{}) interface{} {
+				return refs.Hash
+			}, branch.(string)).(string)
+
+			giverHash := refs.Hash(branch.(string)).(string)
+
+			if objects.IsUpToDate(receiverHash, giverHash) {
+				return "already up-to-date"
+			}
+			_, exists := cmds["f"]
+			if !exists && !merge.CanFastForward(receiverHash, giverHash) {
+				log.Fatal("failed to push some refs to " + remotePath)
+			} else {
+				for _, obj := range objects.AllObjects() {
+					remoteCall(func(interface{}) interface{} {
+						return objects.Write
+					}, obj)
+				}
+
+				remoteCall(func(interface{}) interface{} {
+					return updateRef
+				}, refs.ToLocalRef(branch.(string)), giverHash)
+
+				updateRef(refs.ToRemoteRef(remote.(string), branch.(string)), giverHash)
+				
+				objLen := strconv.Itoa(len(objects.AllObjects()))
+				return "[To " + remotePath + "\nCount " + objLen + "\n" + branch.(string) + " -> " + branch.(string)
+			}
+		}
+	}
+
+	return ""
+}
