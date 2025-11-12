@@ -157,3 +157,7 @@ func LocalHeads() map[string]interface{} {
 
 	return heads
 }
+
+func ToRemoteRef(remote, name string) string {
+	return "refs/remotes/" + remote + "/" + name
+}

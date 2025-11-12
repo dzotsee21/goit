@@ -4,6 +4,8 @@ import (
 	"fmt"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/utils"
+	"log"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -99,4 +101,59 @@ func WriteCommit(treeHash, msg string, parentHashes []string) string {
 		metaData += "parent " + h + "\n" + "Date:  " + time.Now().String() + "\n" + "\n" + "    " + msg + "\n"
 	}
 	return Write("commit " + treeHash + "\n" + metaData)
+}
+
+func AllObjects() []string {
+	files, err := os.ReadDir(filesmodule.GoitPath("objects"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var contents []string
+	for _, file := range files {
+		content := Read(filepath.Join(filesmodule.GoitPath("objects"), file.Name()))
+	 	contents = append(contents, content)
+	}
+
+	return contents
+}
+
+func IsAncestor(descendentHash, ancestorHash string) bool {
+	_ancestors := ancestors(descendentHash)
+
+	for _, anc := range _ancestors {
+		if anc == ancestorHash {
+			return true
+		}
+	}
+
+	return false
+}
+
+func ancestors(commitHash string) []interface{} {
+	parents := parentHashes(Read(commitHash))
+
+	combined := append([]interface{}{}, parents...)
+	for _, p := range parents {
+		combined = append(combined, ancestors(p.(string)))
+	}
+
+	return utils.Flatten(combined)
+}
+
+func parentHashes(str string) []interface{} {
+	if IsType(str) == "commit" {
+		strSplit := strings.Split(str, "\n")
+		var hashes []interface{}
+		for _, line := range strSplit {
+			re := regexp.MustCompile(`/^parent/`)
+			if re.Match([]byte(line)) {
+				hashes = append(hashes, strings.Split(line, " ")[1])
+			}
+		}
+
+		return hashes
+	}
+
+	return []interface{}{}
 }

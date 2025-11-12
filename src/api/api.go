@@ -6,6 +6,7 @@ import (
 	"goit/src/modules/diff"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/index"
+	"goit/src/modules/merge"
 	"goit/src/modules/objects"
 	"goit/src/modules/refs"
 	"goit/src/modules/utils"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -305,6 +307,53 @@ func Remote(command, name, path string) string {
 		config.Write(utils.SetIn(config.Read(), []interface{}{"remote", name, "url", path}))
 		return "\n"
 	}
-	
+
 	return ""
+}
+
+func Fetch(remote, branch interface{}) []string {
+	filesmodule.AssertInRepo()
+
+	if remote == nil || branch == nil {
+		fmt.Println("unsupported")
+	}
+	_, exists := config.Read()["remote"].(map[string]interface{})[remote.(string)]
+	if !exists {
+		fmt.Println(remote.(string) + " does not appear to be a git repository")
+	} else {
+		remoteUrl := config.Read()["remote"].(map[string]interface{})[remote.(string)].(map[string]interface{})["url"]
+		remoteRef := refs.ToRemoteRef(remote.(string), branch.(string))
+
+		newHash := utils.OnRemote(remoteUrl.(string))(func(ref interface{}) interface{} {
+			return refs.Hash(ref.(string))
+		}, branch.(string))
+
+		oldHash := refs.Hash(remoteRef).(string)
+
+		remoteObjects := utils.OnRemote(remoteUrl.(string))(func(_ interface{}) interface{} { 
+				return objects.AllObjects()
+		}).([]string)
+
+		for _, obj := range remoteObjects {
+			objects.Write(obj)
+		}
+
+		updateRef(remoteRef, newHash.(string))
+
+		refs.Write("FETCH_HEAD", newHash.(string) + " branch " + branch.(string) + " of " + remoteUrl.(string))
+
+		var addit string
+		if merge.IsAForceFetch(oldHash, newHash.(string)) {
+			addit = " (forced)"
+		} else {
+			addit = ""
+		}
+
+		return []string{"From " + remoteUrl.(string),
+						"Count " + strconv.Itoa(len(remoteObjects)),
+						branch.(string) + " -> " + remote.(string) + "/" + branch.(string) + addit + "\n",
+		}
+	}
+
+	return []string{}
 }

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"log"
 	"math"
 	"os"
 	"slices"
@@ -84,4 +85,30 @@ func Unique(arr []string) []string {
 	}
 
 	return uElements
+}
+
+func OnRemote(remotePath string) func(fn func(interface{}) interface{}, arg ...string) interface{} {
+	return func(fn func(interface{}) interface{}, arg ...string) interface{} {
+		originalDir, _ := os.Getwd()
+		defer os.Chdir(originalDir)
+
+		err := os.Chdir(remotePath)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return fn(arg)
+	}
+}
+
+func Flatten(arr []interface{}) []interface{} {
+	var result []interface{}
+	for _, e := range arr {
+		if nested, ok := e.([]interface{}); ok {
+			result = append(result, Flatten(nested)...)
+		} else {
+			result = append(result, e)
+		}
+	}
+	return result
 }
