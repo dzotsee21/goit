@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-func Init(isBare bool) {
+func Init(cmds map[string]interface{}) {
 	var currentFiles []string
 
 	files, err := os.ReadDir(".")
@@ -36,9 +36,10 @@ func Init(isBare bool) {
 		return
 	}
 
+	isBare := cmds["isBare"].(bool) == true
 	goitStructure := map[string]interface{}{
 		"HEAD":    "ref: refs/heads/master\n",
-		"config":  config.ObjectToStr(map[string]interface{}{"core": map[string]interface{}{"": map[string]interface{}{"bare": isBare == true}}}),
+		"config":  config.ObjectToStr(map[string]interface{}{"core": map[string]interface{}{"": map[string]interface{}{"bare": isBare}}}),
 		"objects": map[string]interface{}{},
 		"refs": map[string]interface{}{
 			"heads": map[string]interface{}{},
@@ -441,7 +442,7 @@ func Push(remote, branch interface{}, cmds map[string]string) string {
 				}, refs.ToLocalRef(branch.(string)), giverHash)
 
 				updateRef(refs.ToRemoteRef(remote.(string), branch.(string)), giverHash)
-				
+
 				objLen := strconv.Itoa(len(objects.AllObjects()))
 				return "[To " + remotePath + "\nCount " + objLen + "\n" + branch.(string) + " -> " + branch.(string)
 			}
@@ -457,3 +458,45 @@ func Status() string {
 	return status.ToString()
 }
 
+func Clone(remotePath, targetPath string, cmds map[string]interface{}) {
+
+	if !filesmodule.Exists(remotePath) || !utils.OnRemote(remotePath)(func(interface{}) interface{} {
+		return filesmodule.InRepo()
+	}).(bool) {
+		log.Fatal("repository " + remotePath + " doesn't exist")
+	}
+
+	files, _ := os.ReadDir(targetPath)
+	if filesmodule.Exists(targetPath) && len(files) > 0 {
+		log.Fatal(targetPath + " already exists and is not emptry")
+	} else {
+		wd, _ := os.Getwd()
+		remotePath = filepath.Clean(filepath.Join(wd, remotePath))
+
+		if !filesmodule.Exists(targetPath) {
+			err := os.Mkdir(targetPath, 0755)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		utils.OnRemote(targetPath)(func(interface{}) interface{} {
+			Init(cmds)
+
+			cwd, _ := os.Getwd()
+			rel, _ := filepath.Rel(cwd, remotePath)
+			Remote("add", "origin", rel)
+
+			remoteHeadHash := utils.OnRemote(remotePath)(func(interface{}) interface{} {
+				return refs.Hash
+			}, "master")
+
+			if remoteHeadHash != nil {
+				Fetch("origin", "master")
+				merge.WriteFastForwardMerge(nil, remoteHeadHash)
+			}
+
+			return "cloning into " + targetPath
+		})
+	}
+}

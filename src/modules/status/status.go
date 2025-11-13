@@ -39,7 +39,7 @@ func ToString() string {
 
 		var commitedFiles []string
 		for _, key := range utils.MapKeys(ns) {
-			commitedFiles = append(commitedFiles, ns[key].(string) + " " + key)
+			commitedFiles = append(commitedFiles, ns[key].(string)+" "+key)
 		}
 
 		return commitedFiles
@@ -49,7 +49,7 @@ func ToString() string {
 		ns := diff.NameStatus(diff.Diff(nil, nil))
 		var notStagedFiles []string
 		for _, key := range utils.MapKeys(ns) {
-			notStagedFiles = append(notStagedFiles, ns[key].(string) + " " + key)
+			notStagedFiles = append(notStagedFiles, ns[key].(string)+" "+key)
 		}
 
 		return notStagedFiles

@@ -22,20 +22,20 @@ func CanFastForward(receiverHash, giverHash string) bool {
 	return receiverHash == "" || objects.IsAncestor(giverHash, receiverHash)
 }
 
-func WriteFastForwardMerge(receiverHash, giverHash string) {
-	refs.Write(refs.ToLocalRef(refs.HeadBranchName()), giverHash)
+func WriteFastForwardMerge(receiverHash, giverHash interface{}) {
+	refs.Write(refs.ToLocalRef(refs.HeadBranchName()), giverHash.(string))
 
-	index.Write(index.TocToIndex(objects.CommitToc(giverHash)))
+	index.Write(index.TocToIndex(objects.CommitToc(giverHash.(string))))
 
 	if !config.IsBare() {
 		var receiverToc map[string]interface{}
-		if receiverHash == "" {
+		if receiverHash == nil {
 			receiverToc = map[string]interface{}{}
 		} else {
-			receiverToc = objects.CommitToc(receiverHash)
+			receiverToc = objects.CommitToc(receiverHash.(string))
 		}
 
-		workingcopy.Write(diff.TocDiff(receiverToc, objects.CommitToc(giverHash), nil))
+		workingcopy.Write(diff.TocDiff(receiverToc, objects.CommitToc(giverHash.(string)), nil))
 	}
 }
 
