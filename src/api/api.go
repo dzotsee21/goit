@@ -9,6 +9,7 @@ import (
 	"goit/src/modules/merge"
 	"goit/src/modules/objects"
 	"goit/src/modules/refs"
+	"goit/src/modules/status"
 	"goit/src/modules/utils"
 	workingcopy "goit/src/modules/working_copy"
 	"log"
@@ -449,3 +450,10 @@ func Push(remote, branch interface{}, cmds map[string]string) string {
 
 	return ""
 }
+
+func Status() string {
+	filesmodule.AssertInRepo()
+
+	return status.ToString()
+}
+
