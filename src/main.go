@@ -16,7 +16,7 @@ func main() {
 	args := flag.Args()
 
 	if *initPtr {
-		api.Init(*barePtr)
+		api.Init(map[string]interface{}{"isBare": *barePtr})
 	}
 
 	if *addPtr {
