@@ -29,6 +29,8 @@ func Read(path string) string {
 
 		data, err := os.ReadFile(path)
 		if err != nil {
+
+
 			fmt.Println("Error reading file:", err)
 		}
 		return string(data)
@@ -121,7 +123,7 @@ func Write(path string, content string) {
 	parts := strings.Split(path, string(filepath.Separator))
 	result := append(parts, content)
 
-	writeFilesFromTree(utils.SetIn(map[string]interface{}{}, stringToInterface(result)), "")
+	WriteFilesFromTree(utils.SetIn(map[string]interface{}{}, stringToInterface(result)), "")
 }
 
 func stringToInterface(strs []string) []interface{} {
@@ -132,7 +134,7 @@ func stringToInterface(strs []string) []interface{} {
 	return res
 }
 
-func writeFilesFromTree(tree map[string]interface{}, basePath string) {
+func WriteFilesFromTree(tree map[string]interface{}, basePath string) {
 	treeKeys := utils.MapKeys(tree)
 
 	for _, name := range treeKeys {
@@ -151,7 +153,7 @@ func writeFilesFromTree(tree map[string]interface{}, basePath string) {
 				os.Mkdir(path, 0777)
 			}
 
-			writeFilesFromTree(tree[name].(map[string]interface{}), path)
+			WriteFilesFromTree(tree[name].(map[string]interface{}), path)
 		}
 	}
 }
@@ -180,7 +182,12 @@ func NestFlatTree(obj map[string]interface{}) map[string]interface{} {
 
 	nestedObj := make(map[string]interface{})
 	for _, key := range objKeys {
-		nestedObj[key] = utils.SetIn(nestedObj, obj[key].([]interface{}))
+		_, ok := obj[key].([]interface{})
+		if ok {
+			nestedObj = utils.SetIn(nestedObj, obj[key].([]interface{}))
+		} else {
+			nestedObj = utils.SetIn(nestedObj, append([]interface{}{}, obj[key]))
+		}
 	}
 
 	return nestedObj

@@ -1,6 +1,7 @@
 package refs
 
 import (
+	"slices"
 	"goit/src/modules/config"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/objects"
@@ -55,10 +56,7 @@ func IsHeadDetached() bool {
 	re := regexp.MustCompile(`refs`)
 	matches := re.FindString(content)
 
-	if matches != "" {
-		return true
-	}
-	return false
+	return matches != ""
 }
 
 func HeadBranchName() string {
@@ -82,10 +80,8 @@ func IsRef(ref string) bool {
 	matches2 := re2.FindStringSubmatch(ref)
 
 	specialRefs := []string{"HEAD", "FETCH_HEAD", "MERGE_HEAD"}
-	for _, s := range specialRefs {
-		if ref == s {
-			return true
-		}
+	if slices.Contains(specialRefs, ref) {
+		return true
 	}
 
 	return len(matches1) > 0 || len(matches2) > 0

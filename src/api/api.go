@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-func Init(cmds map[string]interface{}) {
+func Init(bare interface{}) {
 	var currentFiles []string
 
 	files, err := os.ReadDir(".")
@@ -36,7 +36,7 @@ func Init(cmds map[string]interface{}) {
 		return
 	}
 
-	isBare := cmds["isBare"].(bool) == true
+	isBare := bare.(string) == "true"
 	goitStructure := map[string]interface{}{
 		"HEAD":    "ref: refs/heads/master\n",
 		"config":  config.ObjectToStr(map[string]interface{}{"core": map[string]interface{}{"": map[string]interface{}{"bare": isBare}}}),
@@ -46,36 +46,15 @@ func Init(cmds map[string]interface{}) {
 		},
 	}
 
-	base := ".goit"
-
-	createStructure(base, goitStructure)
+	cwd, _ := os.Getwd()
+	if isBare {
+		filesmodule.WriteFilesFromTree(goitStructure, cwd)
+	} else {
+		filesmodule.WriteFilesFromTree(map[string]interface{}{".goit": goitStructure}, cwd)
+	}
 }
 
-func createStructure(basePath string, structure map[string]interface{}) error {
-	err := os.Mkdir(basePath, os.FileMode(0755))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for name, value := range structure {
-		filePath := filepath.Join(basePath, name)
-
-		switch v := value.(type) {
-		case string:
-			if err := os.WriteFile(filePath, []byte(v), 0644); err != nil {
-				return err
-			}
-		case map[string]interface{}:
-			if err := createStructure(filePath, v); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func Add(path, _ string) {
+func Add(path string) {
 	filesmodule.AssertInRepo()
 
 	addedFiles := filesmodule.LsRecursive(path)
@@ -90,7 +69,7 @@ func Add(path, _ string) {
 	}
 }
 
-func Rm(path string, cmds []string) {
+func Rm(path string) {
 	filesmodule.AssertInRepo()
 
 	filesToRm := index.MatchingFiles(path)
@@ -176,7 +155,9 @@ func Commit(cmds map[string]string) string {
 func writeTree() string {
 	filesmodule.AssertInRepo()
 
-	return objects.WriteTree(filesmodule.NestFlatTree(index.Toc()))
+	indexToc := index.Toc()
+
+	return objects.WriteTree(filesmodule.NestFlatTree(indexToc))
 }
 
 func updateRef(refToUpdate, refToUpdateTo string) {
@@ -198,7 +179,7 @@ func updateRef(refToUpdate, refToUpdateTo string) {
 	}
 }
 
-func Branch(name interface{}, opts []string) string {
+func Branch(name interface{}) string {
 	filesmodule.AssertInRepo()
 
 	if name == nil {
@@ -271,7 +252,7 @@ func Checkout(ref string) string {
 	return ""
 }
 
-func Diff(ref1, ref2 interface{}, cmds []string) string {
+func Diff(ref1, ref2 interface{}) string {
 	filesmodule.AssertInRepo()
 
 	if ref1 != nil && refs.Hash(ref1.(string)) == "" {
@@ -458,7 +439,7 @@ func Status() string {
 	return status.ToString()
 }
 
-func Clone(remotePath, targetPath string, cmds map[string]interface{}) {
+func Clone(remotePath, targetPath string, isBare interface{}) {
 
 	if !filesmodule.Exists(remotePath) || !utils.OnRemote(remotePath)(func(interface{}) interface{} {
 		return filesmodule.InRepo()
@@ -481,7 +462,7 @@ func Clone(remotePath, targetPath string, cmds map[string]interface{}) {
 		}
 
 		utils.OnRemote(targetPath)(func(interface{}) interface{} {
-			Init(cmds)
+			Init(isBare)
 
 			cwd, _ := os.Getwd()
 			rel, _ := filepath.Rel(cwd, remotePath)

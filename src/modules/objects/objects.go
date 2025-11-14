@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"fmt"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/utils"
 	"log"
@@ -50,11 +49,10 @@ func WriteTree(tree map[string]interface{}) string {
 
 	treeObject := ""
 	for _, key := range treeKeys {
-		switch kType := tree[key].(type) {
-		case string:
-			fmt.Println(kType)
-			treeObject += "blob" + tree[key].(string) + " " + key + "\n"
-		default:
+		_, ok := tree[key].(string)
+		if ok {
+			treeObject += "blob" + tree[key].(string) + " " + key + "\n"			
+		} else {
 			treeObject += "tree " + WriteTree(tree[key].(map[string]interface{})) + " " + key + "\n"
 		}
 	}
