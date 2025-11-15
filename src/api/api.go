@@ -38,7 +38,7 @@ func Init(bare interface{}) {
 
 	isBare := bare.(string) == "true"
 	goitStructure := map[string]interface{}{
-		"HEAD":    "ref: refs/heads/master\n",
+		"HEAD":    "ref: refs/heads/master",
 		"config":  config.ObjectToStr(map[string]interface{}{"core": map[string]interface{}{"": map[string]interface{}{"bare": isBare}}}),
 		"objects": map[string]interface{}{},
 		"refs": map[string]interface{}{
@@ -196,7 +196,7 @@ func Branch(name interface{}) string {
 		return localBranches
 	}
 
-	if refs.Hash("HEAD") == "" {
+	if refs.Hash("HEAD").(string) == "" {
 		fmt.Println(refs.HeadBranchName() + " not a valid object name")
 	}
 	if refs.Exists(refs.ToLocalRef(name.(string))) {

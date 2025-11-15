@@ -1,6 +1,7 @@
 package objects
 
 import (
+	"fmt"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/utils"
 	"log"
@@ -26,7 +27,7 @@ func CommitToc(hash string) map[string]interface{} {
 }
 
 func fileTree(TreeHash string, tree map[string]interface{}) map[string]interface{} {
-	if tree != nil {
+	if tree == nil {
 		return fileTree(TreeHash, map[string]interface{}{})
 	}
 
@@ -51,7 +52,7 @@ func WriteTree(tree map[string]interface{}) string {
 	for _, key := range treeKeys {
 		_, ok := tree[key].(string)
 		if ok {
-			treeObject += "blob" + tree[key].(string) + " " + key + "\n"			
+			treeObject += "blob " + tree[key].(string) + " " + key + "\n"
 		} else {
 			treeObject += "tree " + WriteTree(tree[key].(map[string]interface{})) + " " + key + "\n"
 		}
@@ -98,6 +99,8 @@ func WriteCommit(treeHash, msg string, parentHashes []string) string {
 	for _, h := range parentHashes {
 		metaData += "parent " + h + "\n" + "Date:  " + time.Now().String() + "\n" + "\n" + "    " + msg + "\n"
 	}
+
+	fmt.Println(metaData)
 	return Write("commit " + treeHash + "\n" + metaData)
 }
 

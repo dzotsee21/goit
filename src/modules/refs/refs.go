@@ -1,7 +1,6 @@
 package refs
 
 import (
-	"slices"
 	"goit/src/modules/config"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/objects"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
+	"strings"
 )
 
 func Hash(refOrHash string) interface{} {
@@ -17,6 +18,7 @@ func Hash(refOrHash string) interface{} {
 		return refOrHash
 	} else {
 		terminalRef := TerminalRef(refOrHash)
+
 		if terminalRef == "FETCH_HEAD" {
 			return fetchHeadBranchToMerge(HeadBranchName())
 		}
@@ -33,20 +35,23 @@ func TerminalRef(ref string) string {
 		headPath := filesmodule.GoitPath("HEAD")
 		content := filesmodule.Read(headPath)
 
-		re := regexp.MustCompile(`ref: (refs/heads/.+)`)
-		matches := re.FindStringSubmatch(content)
+        if strings.HasPrefix(content, "ref: ") {
+            symbolic := strings.TrimPrefix(content, "ref: ")
 
-		if len(matches) > 1 {
-			return matches[1]
-		}
+            if strings.HasPrefix(symbolic, "refs/heads/") {
+                return symbolic
+            }
+
+            return ""
+        }
 
 		return ""
 	}
 	if IsRef(ref) {
 		return ref
-	} else {
-		return ToLocalRef(ref)
 	}
+
+	return ToLocalRef(ref)
 }
 
 func IsHeadDetached() bool {
@@ -56,24 +61,33 @@ func IsHeadDetached() bool {
 	re := regexp.MustCompile(`refs`)
 	matches := re.FindString(content)
 
-	return matches != ""
+	if matches == "" {
+		return true
+	}
+
+	return false
 }
 
 func HeadBranchName() string {
-	if !IsHeadDetached() {
-		content := filesmodule.Read(filesmodule.GoitPath("HEAD"))
-		re1 := regexp.MustCompile(`refs/heads/(.+)`)
-		matches := re1.FindStringSubmatch(content)
-		if len(matches) > 1 {
-			return matches[1]
-		}
-	}
+    content := filesmodule.Read(filesmodule.GoitPath("HEAD"))
 
-	return ""
+    if after, ok :=strings.CutPrefix(content, "ref: "); ok  {
+        ref := after
+
+        if after0, ok0 :=strings.CutPrefix(ref, "refs/heads/"); ok0  {
+            return after0
+        }
+    }
+
+    return ""
 }
 
+func ToLocalRef(name string) string {
+	return "refs/heads/" + name
+}
 
 func IsRef(ref string) bool {
+	ref = strings.TrimSpace(ref)
 	re1 := regexp.MustCompile(`^refs/heads/[A-Za-z-]+$`)
 	matches1 := re1.FindStringSubmatch(ref)
 	re2 := regexp.MustCompile(`^refs/remotes/[A-Za-z-]+/[A-Za-z-]+$`)
@@ -85,10 +99,6 @@ func IsRef(ref string) bool {
 	}
 
 	return len(matches1) > 0 || len(matches2) > 0
-}
-
-func ToLocalRef(name string) string {
-	return "refs/heads/" + name
 }
 
 func fetchHeadBranchToMerge(branchName string) []string {

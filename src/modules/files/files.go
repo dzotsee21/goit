@@ -30,7 +30,6 @@ func Read(path string) string {
 		data, err := os.ReadFile(path)
 		if err != nil {
 
-
 			fmt.Println("Error reading file:", err)
 		}
 		return string(data)
@@ -180,7 +179,7 @@ func FlattenNestedTree(tree, obj map[string]interface{}, basePath string) map[st
 func NestFlatTree(obj map[string]interface{}) map[string]interface{} {
 	objKeys := utils.MapKeys(obj)
 
-	nestedObj := make(map[string]interface{})
+	nestedObj := map[string]interface{}{objKeys[0]: obj[objKeys[0]]}
 	for _, key := range objKeys {
 		_, ok := obj[key].([]interface{})
 		if ok {

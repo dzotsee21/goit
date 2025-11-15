@@ -18,6 +18,7 @@ func AddedOrModifiedFiles() []string {
 	} else {
 		headToc = make(map[string]interface{})
 	}
+
 	wc := NameStatus(TocDiff(headToc, index.WorkingCopyToc(), nil))
 
 	wcKeys := utils.MapKeys(wc)
@@ -48,7 +49,7 @@ func NameStatus(dif map[string]interface{}) map[string]interface{} {
 }
 
 func TocDiff(receiver, giver, base map[string]interface{}) map[string]interface{} {
-	fileStatus := func(receiver, giver, base map[string]interface{}) string {
+	fileStatus := func(receiver, giver, base interface{}) string {
 		var receiverPresent bool
 		var giverPresent bool
 		var basePresent bool
@@ -71,15 +72,14 @@ func TocDiff(receiver, giver, base map[string]interface{}) map[string]interface{
 			basePresent = true
 		}
 
-		if receiverPresent && giverPresent && !mapsEqual(receiver, giver) {
-			if !mapsEqual(receiver, base) && !mapsEqual(giver, base) {
+		if receiverPresent && giverPresent && receiver != giver {
+			if receiver != base && giver != base {
 				return FILE_STATUS["CONFLICT"]
 			} else {
 				return FILE_STATUS["MODIFY"]
 			}
-
 		}
-		if mapsEqual(receiver, giver) {
+		if receiver == giver {
 			return FILE_STATUS["SAME"]
 		}
 		if (!receiverPresent && !basePresent && giverPresent) ||
@@ -109,7 +109,8 @@ func TocDiff(receiver, giver, base map[string]interface{}) map[string]interface{
 	idx := make(map[string]interface{})
 
 	for _, uPath := range uniquePaths {
-		status := fileStatus(receiver[uPath].(map[string]interface{}), giver[uPath].(map[string]interface{}), base[uPath].(map[string]interface{}))
+
+		status := fileStatus(receiver[uPath], giver[uPath], base[uPath])
 
 		idx = utils.SetIn(idx, []interface{}{map[string]interface{}{
 			"status":   status,
@@ -122,24 +123,6 @@ func TocDiff(receiver, giver, base map[string]interface{}) map[string]interface{
 	return idx
 }
 
-func mapsEqual(a, b map[string]interface{}) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for k, val := range a {
-		bVal, ok := b[k]
-		if !ok {
-			return false
-		} else {
-			if bVal != val {
-				return false
-			}
-		}
-	}
-
-	return true
-}
 
 func ChangedFilesCommitWouldOverwrite(hash string) []string {
 	headHash := refs.Hash("HEAD")
