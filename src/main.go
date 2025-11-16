@@ -55,7 +55,7 @@ var goit = map[string]CommandFunc{
 		return nil
 	},
 	"push": func(args []interface{}) error {
-		api.Push(args[0], args[1], args[2].(map[string]string))
+		api.Push(args[0], args[1], args[2].(string))
 		return nil
 	},
 	"status": func(args []interface{}) error {

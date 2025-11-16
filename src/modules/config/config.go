@@ -18,18 +18,20 @@ func ObjectToStr(configObj map[string]interface{}) string {
 	obj := make(map[string]interface{})
 
 	for _, section := range objKeys {
-		sectionKeys := objectToKeys(configObj[section].(map[string]interface{}))
-		for _, sk := range sectionKeys {
-			sectionObj := configObj[section].(map[string]interface{})
-			subSectionObj := sectionObj[sk]
+		// sectionKeys := objectToKeys(configObj[section].(map[string]interface{}))
+		sectionObj := configObj[section].(map[string]interface{})
+		subSectionObj := sectionObj
 
-			obj[section] = subSectionObj
-		}
+		obj[section] = subSectionObj
 	}
 
 	objectStr := ""
 	for key, valueObj := range obj {
-		section := "[" + key + "]"
+		if len(key) > 2 && key[0] == '[' && key[len(key)-1] == ']' {
+			key = key[1 : len(key)-1]
+		}
+
+		section := "[" + key
 		settings := ""
 		for param, value := range valueObj.(map[string]interface{}) {
 			var strVal string
@@ -38,11 +40,28 @@ func ObjectToStr(configObj map[string]interface{}) string {
 				strVal = v
 			case bool:
 				strVal = strconv.FormatBool(v)
+			case map[string]interface{}:
+				if param != "" {
+					section += " " + "\"" + param + "\""
+				}
+
+				m := value.(map[string]interface{})
+				for _k, _v := range m {
+					param = _k 
+					switch sV := _v.(type) {
+					case string:
+						strVal = sV
+					case bool:
+						strVal = strconv.FormatBool(sV)
+					}
+					break
+				}
 			default:
 				strVal = fmt.Sprintf("%v", v)
 			}
 
 			settings += fmt.Sprintf("    %s = %s\n", param, strVal)
+			section += "]"
 		}
 
 		objectStr += section + "\n"
@@ -62,6 +81,7 @@ func objectToKeys(configObj map[string]interface{}) []string {
 
 	return objKeys
 }
+
 
 func Read() map[string]interface{} {
 	return StrToObj(filesmodule.Read(filesmodule.GoitPath("config")))
@@ -83,12 +103,13 @@ func StrToObj(str string) map[string]interface{} {
 			entryName = sptStr
 			configObj[entryName] = make(map[string]interface{})
 		} else {
-			vals := strings.Split(sptStr, "=")
-			param := strings.TrimSpace(vals[0])
-			val := strings.TrimSpace(vals[1])
-			configObj[entryName].(map[string]interface{})[param] = val
+			if sptStr != "" {
+				vals := strings.Split(sptStr, "=")
+				param := strings.TrimSpace(vals[0])
+				val := strings.TrimSpace(vals[1])
+				configObj[entryName].(map[string]interface{})[param] = val
+			}
 		}
-
 	}
 
 	return configObj

@@ -283,9 +283,12 @@ func Remote(command, name, path string) string {
 		fmt.Println("unsupported")
 	}
 
-	_, exists := config.Read()["remote"].(map[string]interface{})[name]
+	remoteVal, exists := config.Read()["remote"]
 	if exists {
-		fmt.Println("remote " + name + " already exists")
+		_, exists = remoteVal.(map[string]interface{})[name]
+		if exists {
+			fmt.Println("remote " + name + " already exists")
+		}
 	} else {
 		config.Write(utils.SetIn(config.Read(), []interface{}{"remote", name, "url", path}))
 		return "\n"
@@ -385,15 +388,17 @@ func Pull(remote, branch string) string {
 	return Merge("FETCH_HEAD")
 }
 
-func Push(remote, branch interface{}, cmds map[string]string) string {
+func Push(remote, branch interface{}, cmd string) string {
 	filesmodule.AssertInRepo()
 
 	if remote == nil || branch == nil {
 		log.Fatal("unsupported")
 	} else {
-		remotePath := config.Read()["remote"].(map[string]map[string]string)[remote.(string)]["url"]
+		// TODO: fix config remote (t.d: "origin" as a separate key)
+		remotePath := config.Read()["[remote"].(map[string]interface{})[remote.(string)].(map[string]string)["url"]
 		remoteCall := utils.OnRemote(remotePath)
 
+		// TODO: fix remoteCall return values
 		if remoteCall(func(interface{}) interface{} {
 			return refs.IsCheckedOut
 		}, branch.(string)).(bool) {
@@ -408,7 +413,7 @@ func Push(remote, branch interface{}, cmds map[string]string) string {
 			if objects.IsUpToDate(receiverHash, giverHash) {
 				return "already up-to-date"
 			}
-			_, exists := cmds["f"]
+			exists := cmd == "f"
 			if !exists && !merge.CanFastForward(receiverHash, giverHash) {
 				log.Fatal("failed to push some refs to " + remotePath)
 			} else {
