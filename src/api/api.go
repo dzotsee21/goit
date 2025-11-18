@@ -160,7 +160,7 @@ func writeTree() string {
 	return objects.WriteTree(filesmodule.NestFlatTree(indexToc))
 }
 
-func updateRef(refToUpdate, refToUpdateTo string) {
+func updateRef(refToUpdate, refToUpdateTo string) error {
 	filesmodule.AssertInRepo()
 
 	hash := refs.Hash(refToUpdateTo).(string)
@@ -177,6 +177,8 @@ func updateRef(refToUpdate, refToUpdateTo string) {
 	} else {
 		refs.Write(refs.TerminalRef(refToUpdate), hash)
 	}
+
+	return nil
 }
 
 func Branch(name interface{}) string {
@@ -394,18 +396,16 @@ func Push(remote, branch interface{}, cmd string) string {
 	if remote == nil || branch == nil {
 		log.Fatal("unsupported")
 	} else {
-		// TODO: fix config remote (t.d: "origin" as a separate key)
-		remotePath := config.Read()["[remote"].(map[string]interface{})[remote.(string)].(map[string]string)["url"]
-		remoteCall := utils.OnRemote(remotePath)
 
-		// TODO: fix remoteCall return values
-		if remoteCall(func(interface{}) interface{} {
-			return refs.IsCheckedOut
+		remotePath := config.Read()["[remote " + "\"" + remote.(string) + "\"]"].(map[string]interface{})["url"]
+
+		if utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+			return refs.IsCheckedOut(branch.(string))
 		}, branch.(string)).(bool) {
 			log.Fatal("refusing to update checked out branch " + branch.(string))
 		} else {
-			receiverHash := remoteCall(func(interface{}) interface{} {
-				return refs.Hash
+			receiverHash := utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+				return refs.Hash(branch.(string))
 			}, branch.(string)).(string)
 
 			giverHash := refs.Hash(branch.(string)).(string)
@@ -413,24 +413,26 @@ func Push(remote, branch interface{}, cmd string) string {
 			if objects.IsUpToDate(receiverHash, giverHash) {
 				return "already up-to-date"
 			}
+
 			exists := cmd == "f"
 			if !exists && !merge.CanFastForward(receiverHash, giverHash) {
-				log.Fatal("failed to push some refs to " + remotePath)
+				log.Fatal("failed to push some refs to " + remotePath.(string))
 			} else {
+				// TODO: fix index refs/heads not updating on remote repo
 				for _, obj := range objects.AllObjects() {
-					remoteCall(func(interface{}) interface{} {
-						return objects.Write
+					utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+						return objects.Write(obj)
 					}, obj)
 				}
 
-				remoteCall(func(interface{}) interface{} {
-					return updateRef
+				utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+					return updateRef(refs.ToLocalRef(branch.(string)), giverHash)
 				}, refs.ToLocalRef(branch.(string)), giverHash)
 
 				updateRef(refs.ToRemoteRef(remote.(string), branch.(string)), giverHash)
 
 				objLen := strconv.Itoa(len(objects.AllObjects()))
-				return "[To " + remotePath + "\nCount " + objLen + "\n" + branch.(string) + " -> " + branch.(string)
+				return "[To " + remotePath.(string) + "\nCount " + objLen + "\n" + branch.(string) + " -> " + branch.(string)
 			}
 		}
 	}

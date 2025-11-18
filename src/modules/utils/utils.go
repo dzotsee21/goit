@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -97,7 +98,11 @@ func OnRemote(remotePath string) func(fn func(interface{}) interface{}, arg ...s
 			log.Fatal(err)
 		}
 
-		return fn(arg)
+		rslt := fn(arg)
+
+		fmt.Println(rslt)
+
+		return rslt
 	}
 }
 

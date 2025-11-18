@@ -112,7 +112,8 @@ func AllObjects() []string {
 
 	var contents []string
 	for _, file := range files {
-		content := Read(filepath.Join(filesmodule.GoitPath("objects"), file.Name()))
+		content := Read(file.Name())
+		
 		contents = append(contents, content)
 	}
 

@@ -9,7 +9,7 @@ import (
 )
 
 func IsBare() bool {
-	return Read()["core"].(map[string]map[string]string)[""]["bare"] == "true"
+	return Read()["[core]"].(map[string]interface{})["bare"] == "true"
 }
 
 func ObjectToStr(configObj map[string]interface{}) string {

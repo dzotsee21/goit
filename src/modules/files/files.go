@@ -42,9 +42,13 @@ func GoitPath(path string) string {
 	goitDir := func(dir string) string {
 		if Exists(dir) {
 			potentialGoitFile := filepath.Join(dir, ".goit")
+			potentialConfigFile := filepath.Join(dir, "config")
 
 			if Exists(potentialGoitFile) {
 				return potentialGoitFile
+			}
+			if Exists(potentialConfigFile) && !Exists(potentialGoitFile) {
+				return dir
 			}
 		}
 
