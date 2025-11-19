@@ -111,25 +111,40 @@ func parseOptions(argv []string) map[string]interface{} {
 
 func runCli(argv []string) {
 	opts := parseOptions(argv)
-	commandName := opts["_"].([]interface{})[2]
 
-	if commandName == nil {
-		log.Fatal("you must specify a Goit cmd to run")
+	if len(opts) <= 1 {
+		green := "\033[32m"
+		reset := "\033[0m"
+
+		fmt.Println(green + `
+		██████╗  ██████╗ ██╗████████╗
+		██╔════╝ ██╔═══██╗██║╚══██╔══╝
+		██║  ███╗██║   ██║██║   ██║   
+		██║   ██║██║   ██║██║   ██║   
+		╚██████╔╝╚██████╔╝██║   ██║   
+		╚═════╝  ╚═════╝ ╚═╝   ╚═╝   
+		` + reset)
 	} else {
-		re := regexp.MustCompile("-")
-		commandFnName := re.ReplaceAllString(commandName.(string), "_")
-		fn := goit[commandFnName]
+		commandName := opts["_"].([]interface{})[2]
 
-		if fn == nil {
-			log.Fatal("'" + commandFnName + "' is not a Goit cmd")
+		if commandName == nil {
+			log.Fatal("you must specify a Goit cmd to run")
 		} else {
-			commandArgs := opts["_"].([]interface{})[3:]
+			re := regexp.MustCompile("-")
+			commandFnName := re.ReplaceAllString(commandName.(string), "_")
+			fn := goit[commandFnName]
 
-			err := fn(commandArgs)
-			if err != nil {
-				log.Fatal(err)
+			if fn == nil {
+				log.Fatal("'" + commandFnName + "' is not a Goit cmd")
+			} else {
+				commandArgs := opts["_"].([]interface{})[3:]
+
+				err := fn(commandArgs)
+				if err != nil {
+					log.Fatal(err)
+				}
+				return
 			}
-			return
 		}
 	}
 
