@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"fmt"
 	filesmodule "goit/src/modules/files"
 	"goit/src/modules/utils"
 	"log"
@@ -100,7 +99,6 @@ func WriteCommit(treeHash, msg string, parentHashes []string) string {
 		metaData += "parent " + h + "\n" + "Date:  " + time.Now().String() + "\n" + "\n" + "    " + msg + "\n"
 	}
 
-	fmt.Println(metaData)
 	return Write("commit " + treeHash + "\n" + metaData)
 }
 

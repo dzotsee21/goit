@@ -460,7 +460,6 @@ func Clone(remotePath, targetPath string, isBare interface{}) {
 	} else {
 		// wd, _ := os.Getwd()
 		// remotePath = filepath.Clean(filepath.Join(wd, remotePath))
-		fmt.Println(remotePath)
 
 		if !filesmodule.Exists(targetPath) {
 			err := os.Mkdir(targetPath, 0755)
