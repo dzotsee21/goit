@@ -305,20 +305,21 @@ func Fetch(remote, branch interface{}) []string {
 	if remote == nil || branch == nil {
 		fmt.Println("unsupported")
 	}
-	_, exists := config.Read()["remote"].(map[string]interface{})[remote.(string)]
+	_, exists := config.Read()["[remote " + "\"" + remote.(string) + "\"]"]
 	if !exists {
 		fmt.Println(remote.(string) + " does not appear to be a git repository")
 	} else {
-		remoteUrl := config.Read()["remote"].(map[string]interface{})[remote.(string)].(map[string]interface{})["url"]
+		remotePath := config.Read()["[remote " + "\"" + remote.(string) + "\"]"].(map[string]interface{})["url"].(string)
+
 		remoteRef := refs.ToRemoteRef(remote.(string), branch.(string))
 
-		newHash := utils.OnRemote(remoteUrl.(string))(func(ref interface{}) interface{} {
-			return refs.Hash(ref.(string))
+		newHash := utils.OnRemote(remotePath)(func(interface{}) interface{} {
+			return refs.Hash(branch.(string))
 		}, branch.(string))
 
 		oldHash := refs.Hash(remoteRef).(string)
 
-		remoteObjects := utils.OnRemote(remoteUrl.(string))(func(_ interface{}) interface{} {
+		remoteObjects := utils.OnRemote(remotePath)(func(interface{}) interface{} {
 			return objects.AllObjects()
 		}).([]string)
 
@@ -328,7 +329,7 @@ func Fetch(remote, branch interface{}) []string {
 
 		updateRef(remoteRef, newHash.(string))
 
-		refs.Write("FETCH_HEAD", newHash.(string)+" branch "+branch.(string)+" of "+remoteUrl.(string))
+		refs.Write("FETCH_HEAD", newHash.(string)+" branch "+branch.(string)+" of "+ remotePath)
 
 		var addit string
 		if merge.IsAForceFetch(oldHash, newHash.(string)) {
@@ -337,7 +338,7 @@ func Fetch(remote, branch interface{}) []string {
 			addit = ""
 		}
 
-		return []string{"From " + remoteUrl.(string),
+		return []string{"From " + remotePath,
 			"Count " + strconv.Itoa(len(remoteObjects)),
 			branch.(string) + " -> " + remote.(string) + "/" + branch.(string) + addit + "\n",
 		}
@@ -397,14 +398,14 @@ func Push(remote, branch interface{}, cmd string) string {
 		log.Fatal("unsupported")
 	} else {
 
-		remotePath := config.Read()["[remote " + "\"" + remote.(string) + "\"]"].(map[string]interface{})["url"]
+		remotePath := config.Read()["[remote " + "\"" + remote.(string) + "\"]"].(map[string]interface{})["url"].(string)
 
-		if utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+		if utils.OnRemote(remotePath)(func(interface{}) interface{} {
 			return refs.IsCheckedOut(branch.(string))
 		}, branch.(string)).(bool) {
 			log.Fatal("refusing to update checked out branch " + branch.(string))
 		} else {
-			receiverHash := utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+			receiverHash := utils.OnRemote(remotePath)(func(interface{}) interface{} {
 				return refs.Hash(branch.(string))
 			}, branch.(string)).(string)
 
@@ -416,23 +417,22 @@ func Push(remote, branch interface{}, cmd string) string {
 
 			exists := cmd == "f"
 			if !exists && !merge.CanFastForward(receiverHash, giverHash) {
-				log.Fatal("failed to push some refs to " + remotePath.(string))
+				log.Fatal("failed to push some refs to " + remotePath)
 			} else {
-				// TODO: fix index refs/heads not updating on remote repo
 				for _, obj := range objects.AllObjects() {
-					utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+					utils.OnRemote(remotePath)(func(interface{}) interface{} {
 						return objects.Write(obj)
 					}, obj)
 				}
 
-				utils.OnRemote(remotePath.(string))(func(interface{}) interface{} {
+				utils.OnRemote(remotePath)(func(interface{}) interface{} {
 					return updateRef(refs.ToLocalRef(branch.(string)), giverHash)
 				}, refs.ToLocalRef(branch.(string)), giverHash)
 
 				updateRef(refs.ToRemoteRef(remote.(string), branch.(string)), giverHash)
 
 				objLen := strconv.Itoa(len(objects.AllObjects()))
-				return "[To " + remotePath.(string) + "\nCount " + objLen + "\n" + branch.(string) + " -> " + branch.(string)
+				return "[To " + remotePath + "\nCount " + objLen + "\n" + branch.(string) + " -> " + branch.(string)
 			}
 		}
 	}
@@ -456,10 +456,11 @@ func Clone(remotePath, targetPath string, isBare interface{}) {
 
 	files, _ := os.ReadDir(targetPath)
 	if filesmodule.Exists(targetPath) && len(files) > 0 {
-		log.Fatal(targetPath + " already exists and is not emptry")
+		log.Fatal(targetPath + " already exists and is not empty")
 	} else {
-		wd, _ := os.Getwd()
-		remotePath = filepath.Clean(filepath.Join(wd, remotePath))
+		// wd, _ := os.Getwd()
+		// remotePath = filepath.Clean(filepath.Join(wd, remotePath))
+		fmt.Println(remotePath)
 
 		if !filesmodule.Exists(targetPath) {
 			err := os.Mkdir(targetPath, 0755)
@@ -476,7 +477,7 @@ func Clone(remotePath, targetPath string, isBare interface{}) {
 			Remote("add", "origin", rel)
 
 			remoteHeadHash := utils.OnRemote(remotePath)(func(interface{}) interface{} {
-				return refs.Hash
+				return refs.Hash("master")
 			}, "master")
 
 			if remoteHeadHash != nil {

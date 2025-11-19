@@ -99,11 +99,16 @@ func LsRecursive(path string) []string {
 }
 
 func Exists(path string) bool {
-	if path == "" {
-		return true
-	}
-	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
+    if path == "" {
+        return false
+    }
+
+    info, err := os.Stat(path)
+    if err != nil {
+        return false
+    }
+
+    return info.IsDir() || !info.IsDir()
 }
 
 func PathFromRepoRoot(path string) string {

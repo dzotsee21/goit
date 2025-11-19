@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"goit/src/api"
 	"log"
 	"os"
@@ -23,43 +24,53 @@ var goit = map[string]CommandFunc{
 		return nil
 	},
 	"commit": func(args []interface{}) error {
-		api.Commit(map[string]string{"m": args[0].(string)})
+		val := api.Commit(map[string]string{"m": args[0].(string)})
+		fmt.Println(val)
 		return nil
 	},
 	"branch": func(args []interface{}) error {
-		api.Branch(args[0])
+		val := api.Branch(args[0])
+		fmt.Println(val)
 		return nil
 	},
 	"checkout": func(args []interface{}) error {
-		api.Checkout(args[0].(string))
+		val := api.Checkout(args[0].(string))
+		fmt.Println(val)
 		return nil
 	},
 	"diff": func(args []interface{}) error {
-		api.Diff(args[0], args[1])
+		val := api.Diff(args[0], args[1])
+		fmt.Println(val)
 		return nil
 	},
 	"remote": func(args []interface{}) error {
-		api.Remote(args[0].(string), args[1].(string), args[2].(string))
+		val := api.Remote(args[0].(string), args[1].(string), args[2].(string))
+		fmt.Println(val)
 		return nil
 	},
 	"fetch": func(args []interface{}) error {
-		api.Fetch(args[0], args[1])
+		val := api.Fetch(args[0], args[1])
+		fmt.Println(val)
 		return nil
 	},
 	"merge": func(args []interface{}) error {
-		api.Merge(args[0].(string))
+		val := api.Merge(args[0].(string))
+		fmt.Println(val)
 		return nil
 	},
 	"pull": func(args []interface{}) error {
-		api.Pull(args[0].(string), args[1].(string))
+		val := api.Pull(args[0].(string), args[1].(string))
+		fmt.Println(val)
 		return nil
 	},
 	"push": func(args []interface{}) error {
-		api.Push(args[0], args[1], args[2].(string))
+		val := api.Push(args[0], args[1], args[2].(string))
+		fmt.Println(val)
 		return nil
 	},
 	"status": func(args []interface{}) error {
-		api.Status()
+		val := api.Status()
+		fmt.Println(val)
 		return nil
 	},
 	"clone": func(args []interface{}) error {
