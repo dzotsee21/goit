@@ -112,7 +112,7 @@ func parseOptions(argv []string) map[string]interface{} {
 func runCli(argv []string) {
 	opts := parseOptions(argv)
 
-	if len(opts) <= 1 {
+	if len(opts) < 1 {
 		green := "\033[32m"
 		reset := "\033[0m"
 

@@ -57,7 +57,18 @@ func Init(bare interface{}) {
 func Add(path string) {
 	filesmodule.AssertInRepo()
 
-	addedFiles := filesmodule.LsRecursive(path)
+	var filesToIgnore []string
+	if filesmodule.Exists(".goitignore") {
+		content, err := os.ReadFile(".goitignore")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fileNames := strings.Split(strings.ReplaceAll(string(content), "\r\n", "\n"), "\n")
+		filesToIgnore = fileNames
+	}
+
+	addedFiles := filesmodule.LsRecursive(path, filesToIgnore)
 
 	if len(addedFiles) == 0 {
 		fmt.Println(filesmodule.PathFromRepoRoot(path) + " didn't match any files")

@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -64,12 +65,16 @@ func GoitPath(path string) string {
 	return ""
 }
 
-func LsRecursive(path string) []string {
+func LsRecursive(path string, filesToIgnore []string) []string {
 	if !Exists(path) {
 		return nil
 	}
 
 	info, _ := os.Stat(path)
+	if slices.Contains(filesToIgnore, info.Name()) {
+		return nil
+	}
+
 	if !info.IsDir() { // path is a file
 		listPath := []string{path}
 		return listPath
@@ -86,7 +91,7 @@ func LsRecursive(path string) []string {
 			filePath := filepath.Join(path, file.Name())
 
 			if file.IsDir() {
-				fileList = append(fileList, LsRecursive(filePath)...)
+				fileList = append(fileList, LsRecursive(filePath, filesToIgnore)...)
 			} else {
 				fileList = append(fileList, filePath)
 			}
