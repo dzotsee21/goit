@@ -12,69 +12,135 @@ type CommandFunc func(args []interface{}) error
 
 var goit = map[string]CommandFunc{
 	"init": func(args []interface{}) error {
-		api.Init(args[0])
+		if len(args) == 1 {
+			api.Init(args[0])
+		} else {
+			fmt.Println("usage: goit init <bare: false|true>")
+		}
+
 		return nil
 	},
 	"add": func(args []interface{}) error {
-		api.Add(args[0].(string))
+		if len(args) == 1 {
+			api.Add(args[0].(string))
+		} else {
+			fmt.Println("usage: goit add <files|folders|.>")
+		}
+
 		return nil
 	},
 	"rm": func(args []interface{}) error {
-		api.Rm(args[0].(string))
+		if len(args) == 1 {
+			api.Rm(args[0].(string))
+		} else {
+			fmt.Println("usage: goit rm <file|folders|.>")
+		}
+
 		return nil
 	},
 	"commit": func(args []interface{}) error {
-		val := api.Commit(map[string]string{"m": args[0].(string)})
-		fmt.Println(val)
+		if len(args) == 1 {
+			val := api.Commit(map[string]string{"m": args[0].(string)})
+			fmt.Println(val)
+		} else {
+			fmt.Println("usage: goit commit <commit_msg>")
+		}
+
 		return nil
 	},
 	"branch": func(args []interface{}) error {
-		val := api.Branch(args[0])
-		fmt.Println(val)
+		if len(args) == 1 {
+			val := api.Branch(args[0])
+			fmt.Println(val)
+		} else {
+			fmt.Println("usage: goit branch <name>")
+		}
+
 		return nil
 	},
 	"checkout": func(args []interface{}) error {
-		val := api.Checkout(args[0].(string))
-		fmt.Println(val)
+		if len(args) == 1 {
+			val := api.Checkout(args[0].(string))
+			fmt.Println(val)			
+		} else {
+			fmt.Println("usage: goit checkout <branch_name>")
+		}
+
 		return nil
 	},
 	"diff": func(args []interface{}) error {
-		val := api.Diff(args[0], args[1])
-		fmt.Println(val)
+		if len(args) == 2 {
+			val := api.Diff(args[0], args[1])
+			fmt.Println(val)
+		} else {
+			fmt.Println("usage: goit diff <ref1> <ref2>")
+		}
+
 		return nil
 	},
 	"remote": func(args []interface{}) error {
-		val := api.Remote(args[0].(string), args[1].(string), args[2].(string))
-		fmt.Println(val)
+		if len(args) == 3 {
+			val := api.Remote(args[0].(string), args[1].(string), args[2].(string))
+			fmt.Println(val)
+		} else {
+			fmt.Println("usage: goit remote <cmd> <name> <remote_path>")
+		}
+
 		return nil
 	},
 	"fetch": func(args []interface{}) error {
-		val := api.Fetch(args[0], args[1])
-		fmt.Println(val)
+		if len(args) == 2 {
+			val := api.Fetch(args[0], args[1])
+			fmt.Println(val)			
+		}
+
 		return nil
 	},
 	"merge": func(args []interface{}) error {
-		val := api.Merge(args[0].(string))
-		fmt.Println(val)
+		if len(args) == 1 {
+			val := api.Merge(args[0].(string))
+			fmt.Println(val)
+		} else {
+			fmt.Println("usage: goit merge <ref>")
+		}
+
 		return nil
 	},
 	"pull": func(args []interface{}) error {
-		val := api.Pull(args[0].(string), args[1].(string))
-		fmt.Println(val)
+		if len(args) == 2 {
+			val := api.Pull(args[0].(string), args[1].(string))
+			fmt.Println(val)
+		} else {
+			fmt.Println("usage: goit pull <remote> <branch_name>")
+		}
+
 		return nil
 	},
 	"push": func(args []interface{}) error {
-		val := api.Push(args[0], args[1], args[2].(string))
-		fmt.Println(val)
+		if len(args) == 3 {
+			val := api.Push(args[0], args[1], args[2].(string))
+			fmt.Println(val)
+		} else {
+			fmt.Println("usage: goit push <remote> <branch_name> <cmd>")
+		}
+
 		return nil
 	},
 	"status": func(args []interface{}) error {
-		val := api.Status()
-		fmt.Println(val)
+		if len(args) == 0 {
+			val := api.Status()
+			fmt.Println(val)			
+		}
+
 		return nil
 	},
 	"clone": func(args []interface{}) error {
-		api.Clone(args[0].(string), args[1].(string), args[2])
+		if len(args) == 3 {
+			api.Clone(args[0].(string), args[1].(string), args[2])
+		} else {
+			fmt.Println("usage: goit clone <remote_path> <target_path> <bare: false|true>")
+		}
+
 		return nil
 	},
 }
@@ -112,7 +178,7 @@ func parseOptions(argv []string) map[string]interface{} {
 func runCli(argv []string) {
 	opts := parseOptions(argv)
 
-	if len(opts) < 1 {
+	if len(opts["_"].([]interface{})) <= 1 {
 		green := "\033[32m"
 		reset := "\033[0m"
 
@@ -125,7 +191,7 @@ func runCli(argv []string) {
 		╚═════╝  ╚═════╝ ╚═╝   ╚═╝   
 		` + reset)
 	} else {
-		commandName := opts["_"].([]interface{})[2]
+		commandName := opts["_"].([]interface{})[1]
 
 		if commandName == nil {
 			log.Fatal("you must specify a Goit cmd to run")
@@ -137,7 +203,7 @@ func runCli(argv []string) {
 			if fn == nil {
 				log.Fatal("'" + commandFnName + "' is not a Goit cmd")
 			} else {
-				commandArgs := opts["_"].([]interface{})[3:]
+				commandArgs := opts["_"].([]interface{})[2:]
 
 				err := fn(commandArgs)
 				if err != nil {
