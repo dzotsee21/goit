@@ -12,8 +12,12 @@ type CommandFunc func(args []interface{}) error
 
 var goit = map[string]CommandFunc{
 	"init": func(args []interface{}) error {
-		if len(args) == 1 {
-			api.Init(args[0])
+		if len(args) <= 1 {
+			if len(args) == 0 {
+				api.Init("false")
+			} else {
+				api.Init(args[0])
+			}
 		} else {
 			fmt.Println("usage: goit init <bare: false|true>")
 		}
@@ -61,7 +65,7 @@ var goit = map[string]CommandFunc{
 	"checkout": func(args []interface{}) error {
 		if len(args) == 1 {
 			val := api.Checkout(args[0].(string))
-			fmt.Println(val)			
+			fmt.Println(val)
 		} else {
 			fmt.Println("usage: goit checkout <branch_name>")
 		}

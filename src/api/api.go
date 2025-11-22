@@ -469,9 +469,6 @@ func Clone(remotePath, targetPath string, isBare interface{}) {
 	if filesmodule.Exists(targetPath) && len(files) > 0 {
 		log.Fatal(targetPath + " already exists and is not empty")
 	} else {
-		// wd, _ := os.Getwd()
-		// remotePath = filepath.Clean(filepath.Join(wd, remotePath))
-
 		if !filesmodule.Exists(targetPath) {
 			err := os.Mkdir(targetPath, 0755)
 			if err != nil {
